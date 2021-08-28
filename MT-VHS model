@@ -60,12 +60,12 @@ DEFINE_SOURCE(mass_source,c,t,dS,eqn)
     /*now begins to judge*/
     if (xc[0]<=xmax && xc[0]>=xmin && xc[2]<=zmax && xc[2]>=zmin && xc[1]<=lf)
 	{
-		if ((3.7*pow(Q_xing,0.4)-1.02)*D>0.45) /*flame touch the ceiling*/
-		    {source=0.426*pow(Q,1.0/3)*pow(lf,2.0/3)/a/pow(b,3.0)*pow(xc[2]-4.5,2.0)+0.0355*pow(Q,1.0/3)*pow(lf,2.0/3)/(a*b);
-		     dS[eqn] = 0.0;}
-		else /*flame not touch the ceiling*/
-			{source=0.1704*pow(Q,1.0/3)*pow(lf,2.0/3)/a/pow(b,3.0)*pow(xc[2]-4.5,2.0)+0.0568*pow(Q,1.0/3)*pow(lf,2.0/3)/(a*b);
-		     dS[eqn] = 0.0;}
+		if ((3.7*pow(Q_xing,0.4)-1.02)*D>0.45)   /*flame touch the ceiling*/
+		    {  source=0.426*pow(Q,1.0/3)*pow(lf,2.0/3)/a/pow(b,3.0)*pow(xc[2]-4.5,2.0)+0.0355*pow(Q,1.0/3)*pow(lf,2.0/3)/(a*b);
+		       dS[eqn] = 0.0;}
+		else    /*flame not touch the ceiling*/
+		    { source=0.1704*pow(Q,1.0/3)*pow(lf,2.0/3)/a/pow(b,3.0)*pow(xc[2]-4.5,2.0)+0.0568*pow(Q,1.0/3)*pow(lf,2.0/3)/(a*b);
+		       dS[eqn] = 0.0;}
 	}
 	else
 	{
