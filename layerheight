@@ -1,0 +1,270 @@
+/*---------------next record temperature gradient (smoke layer height) in main and branch---------------------------------------------*/
+
+/*record layerheight, temperature gradient etc. */
+DEFINE_INIT(layerheight_init,d)
+{
+	Thread *t, *tf;
+	cell_t c;
+	face_t f;
+	real xc[ND_ND];
+	real xf[ND_ND];
+	real A[ND_ND];  /*store face normal vector*/
+	int n=-1,cell_num=0; /*loop variable*/
+	
+	FILE *fp; /*pointer to a file */
+	fp = fopen("smokelayerheight.txt","w+");
+	fprintf(fp,"/*this is recorded by FLUENT UDF*/\n");
+	fprintf(fp,"grad0,grad1,grad2,grad3,grad35,grad4,grad45,grad5,grad55,grad6,grad7,grad8,grad9,SLH0,SLH1,SLH2,SLH3,SLH35,SLH4,SLH45,SLH5,SLH55,SLH6,SLH7,SLH8,SLH9, vortex0,vortex1,vortex2,vortex3,vortex35,vortex4,vortex45,vortex5,vortex55,vortex6,vortex7,vortex8,vortex9");
+	fprintf(fp,"\n");
+	fclose(fp);
+}
+
+DEFINE_EXECUTE_AT_END(layerheight)
+{
+	Domain *d;
+   	Thread *t,*tf;
+    cell_t c;
+	face_t f;
+	real xc[ND_ND];
+	real loopnum=0;
+	real SLH0,SLH1,SLH2,SLH3,SLH35,SLH4,SLH45,SLH5,SLH55,SLH6,SLH7,SLH8,SLH9; /*SLH denotes smoke layer height*/
+	real grad0,grad1,grad2,grad3,grad35,grad4,grad45,grad5,grad55,grad6,grad7,grad8,grad9;/*grad denote gradient*/
+	real vortex0,vortex1,vortex2,vortex3,vortex35,vortex4,vortex45,vortex5,vortex55,vortex6,vortex7,vortex8,vortex9;/*vortex denote vortex*/
+	FILE *fp; /*pointer to a file */
+	
+	SLH0=0,SLH1=0,SLH2=0,SLH3=0,SLH35=0,SLH4=0,SLH45=0,SLH5=0,SLH55=0,SLH6=0,SLH7=0,SLH8=0,SLH9=0;
+	grad0=0,grad1=0,grad2=0,grad3=0,grad35=0,grad4=0,grad45=0,grad5=0,grad55=0,grad6=0,grad7=0,grad8=0,grad9=0;
+	vortex0=0,vortex1=0,vortex2=0,vortex3=0,vortex35=0,vortex4=0,vortex45=0,vortex5=0,vortex55=0,vortex6=0,vortex7=0,vortex8=0,vortex9=0;
+	
+
+	fp = fopen("smokelayerheight.txt","a+");
+	d = Get_Domain(1);
+	
+	thread_loop_c(t,d)
+	{
+		begin_c_loop(c,t)
+		{
+		  C_CENTROID(xc,c,t);  /*get the center coordinates of one cell*/
+		  if (fabs(xc[0]-0.3)<=1e-2)  /*only consider the main tunnel central plane,the mesh resolution is 1e-2*/
+		  {
+			  if ((fabs(xc[2]-0)<=5e-2) && (grad0<C_T_G(c,t)[1]))  /*z=0 *//*gradient of temperature density, Y-component*/
+			{
+				 grad0=C_T_G(c,t)[1];
+				 SLH0=xc[1];  /*get the height*/
+				 vortex0=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/
+			}
+			else
+			{
+				if  ((fabs(xc[2]-1)<=5e-2) &&  (grad1<C_T_G(c,t)[1]))
+				{
+				  grad1=C_T_G(c,t)[1];
+				  SLH1=xc[1];  /*get the height*/
+				  vortex1=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/
+				}
+				else 
+				{
+					if ((fabs(xc[2]-2)<=5e-2) &&  (grad2<C_T_G(c,t)[1]))
+					{
+						grad2=C_T_G(c,t)[1];
+				        SLH2=xc[1];  /*get the height*/
+				        vortex2=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/
+					}
+					else
+					{
+						if ( (fabs(xc[2]-3)<=5e-2) && (grad3<C_T_G(c,t)[1]) )
+						{
+							grad3=C_T_G(c,t)[1];
+				            SLH3=xc[1];  /*get the height*/
+				            vortex3=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/
+						}
+						else
+						{
+							if ((fabs(xc[2]-3.5)<=5e-2)  && (grad35<C_T_G(c,t)[1]))
+							{
+								grad35=C_T_G(c,t)[1];
+				                SLH35=xc[1];  /*get the height*/
+				                vortex35=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/
+							}
+							else
+							{
+                               if ((fabs(xc[2]-4)<=5e-2) && (grad4<C_T_G(c,t)[1]))
+							   {
+								    grad4=C_T_G(c,t)[1];
+				                    SLH4=xc[1];  /*get the height*/
+				                    vortex4=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/   
+							   }
+							   else 
+							   {
+								   if ((fabs(xc[2]-4.5)<=5e-2) && (grad45<C_T_G(c,t)[1]))
+								   {
+									   grad45=C_T_G(c,t)[1];
+				                       SLH45=xc[1];  /*get the height*/
+				                       vortex45=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/ 
+								   }
+								   else
+								   {
+									   if ((fabs(xc[2]-5)<=5e-2) && (grad5<C_T_G(c,t)[1]))
+									   {
+										     grad5=C_T_G(c,t)[1];
+				                             SLH5=xc[1];  /*get the height*/
+				                             vortex5=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/										   
+									   }
+									   else
+									   {
+										   if ((fabs(xc[2]-5.5)<=5e-2) && (grad55<C_T_G(c,t)[1]))
+										   {
+											   grad55=C_T_G(c,t)[1];
+				                               SLH55=xc[1];  /*get the height*/
+				                                vortex55=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/
+										   }
+										   else
+										   {
+											   if ((fabs(xc[2]-6)<=5e-2) && (grad6<C_T_G(c,t)[1]))
+											   {
+												    grad6=C_T_G(c,t)[1];
+				                                    SLH6=xc[1];  /*get the height*/
+				                                    vortex6=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/
+											   }
+											   else
+											   {
+												   if ((fabs(xc[2]-7)<=5e-2) && (grad7<C_T_G(c,t)[1]))
+												   {
+													   grad7=C_T_G(c,t)[1];
+				                                       SLH7=xc[1];  /*get the height*/
+				                                       vortex7=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/
+												   }
+												   else
+												   {
+													   if ((fabs(xc[2]-8)<=5e-2)  &&  (grad8<C_T_G(c,t)[1]))
+													   {
+														   grad8=C_T_G(c,t)[1];
+				                                           SLH8=xc[1];  /*get the height*/
+				                                            vortex8=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/
+													   }
+													   else 
+													   {
+														   if ((fabs(xc[2]-9)<=5e-2) && (grad9<C_T_G(c,t)[1]) )
+														   {
+															    grad9=C_T_G(c,t)[1];
+				                                                SLH9=xc[1];  /*get the height*/
+			                                                    vortex9=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/
+														   }
+													   }
+													   
+												   }
+											   }
+										   }
+										   
+									   }
+								   }
+							   }
+							   
+							}
+							
+						}
+					}
+				}
+			}
+		  
+		 }
+	    }
+		end_c_loop(c,t)  
+	}
+	fprintf(fp,"%-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g\n", grad0,grad1,grad2,grad3,grad35,grad4,grad45,grad5,grad55,grad6,grad7,grad8,grad9,SLH0,SLH1,SLH2,SLH3,SLH35,SLH4,SLH45,SLH5,SLH55,SLH6,SLH7,SLH8,SLH9, vortex0,vortex1,vortex2,vortex3,vortex35,vortex4,vortex45,vortex5,vortex55,vortex6,vortex7,vortex8,vortex9);
+	fclose(fp);
+}
+
+DEFINE_INIT(layerheight_branch_init,d)
+{
+	Thread *t, *tf;
+	cell_t c;
+	face_t f;
+	real xc[ND_ND];
+	real xf[ND_ND];
+	real A[ND_ND];  /*store face normal vector*/
+	int n=-1,cell_num=0; /*loop variable*/
+	
+	FILE *fp; /*pointer to a file */
+	fp = fopen("smokelayerheight_branch.txt","w+");
+	fprintf(fp,"/*this is recorded by FLUENT UDF*/\n");
+	fprintf(fp,"grad06,grad16,grad26,grad36,grad46,SLH06,SLH16,SLH26,SLH36,SLH46,vortex06,vortex16,vortex26,vortex36,vortex46");
+	fprintf(fp,"\n");
+	fclose(fp);
+}
+
+DEFINE_EXECUTE_AT_END(layerheight_branch)
+{
+	Domain *d;
+   	Thread *t,*tf;
+    cell_t c;
+	face_t f;
+	real xc[ND_ND];
+	real SLH06,SLH16,SLH26,SLH36,SLH46; /*SLH denotes smoke layer height*/
+	real grad06,grad16,grad26,grad36,grad46;/*grad denote gradient*/
+	real vortex06,vortex16,vortex26,vortex36,vortex46;/*vortex denote vortex*/
+	FILE *fp; /*pointer to a file */
+	
+	SLH06=0,SLH16=0,SLH26=0,SLH36=0,SLH46=0;
+	grad06=0,grad16=0,grad26=0,grad36=0,grad46=0;
+	vortex06=0,vortex16=0,vortex26=0,vortex36=0,vortex46=0;
+	
+
+	fp = fopen("smokelayerheight_branch.txt","a+");
+	d = Get_Domain(1);
+	
+	thread_loop_c(t,d)
+	{
+		begin_c_loop(c,t)
+		{
+		  C_CENTROID(xc,c,t);  /*get the center coordinates of one cell*/
+		  if (fabs(xc[2]-4.5)<=1e-2)  /*only consider the central plane*/
+		  {
+			if ((fabs(xc[0]-0.6)<=5e-2)  &&  (grad06<C_T_G(c,t)[1]))  /*x=0.6 */
+			{
+				  grad06=C_T_G(c,t)[1];
+				  SLH06=xc[1];  /*get the height*/
+				  vortex06=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/
+			}
+			else
+			{
+				if ((fabs(xc[0]-1.6)<=5e-2) && (grad16<C_T_G(c,t)[1]))  /*x=1.6 */
+			    {
+				  grad16=C_T_G(c,t)[1];
+				  SLH16=xc[1];  /*get the height*/
+				  vortex16=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/
+			    }
+				else
+				{
+					if ((fabs(xc[0]-2.6)<=5e-2)  && (grad26<C_T_G(c,t)[1]))  /*x=2.6 */
+			       {
+				     grad26=C_T_G(c,t)[1];
+				     SLH26=xc[1];  /*get the height*/
+				     vortex26=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/
+				   }
+				   else 
+				   {
+					   if ((fabs(xc[0]-3.6)<=5e-2) && (grad36<C_T_G(c,t)[1])) /*x=3.6 */
+					   {
+						   grad36=C_T_G(c,t)[1];
+				           SLH36=xc[1];  /*get the height*/
+				           vortex36=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/ 
+					   }
+					   else
+					   {
+						  if ((fabs(xc[0]-4.6)<=5e-2) && (grad46<C_T_G(c,t)[1])) /*x=4.6 */
+						  {
+							  grad46=C_T_G(c,t)[1];
+				              SLH46=xc[1];  /*get the height*/
+				              vortex46=-C_DVDZ(c,t)+C_DWDY(c,t);/*calculate planner vorticity*/
+						  }
+					   }
+				   }
+			    }
+			}
+		 }
+		}end_c_loop(c,t)  	
+	}
+	
+  fprintf(fp,"%-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g\n", grad06,grad16,grad26,grad36,grad46,SLH06,SLH16,SLH26,SLH36,SLH46,vortex06,vortex16,vortex26,vortex36,vortex46);
+  fclose(fp);	
+}
