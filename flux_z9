@@ -1,0 +1,134 @@
+#include "udf.h"
+
+#define a 0.2
+#define b 0.1
+#define Q 10.04
+#define surfNO 34 /*branch tunnel end surface ID, must be checked before calculating*/
+#define Rg 287  /*universal gas constant, J/kgK*/
+
+DEFINE_INIT(head_z9,d)
+{
+	Thread *t, *tf;
+	cell_t c;
+	face_t f;
+	real xc[ND_ND];
+	real xf[ND_ND];
+	real A[ND_ND];  /*store face normal vector*/
+	int n=-1,cell_num=0; /*loop variable*/
+	
+	FILE *fp; /*pointer to a file */
+	fp = fopen("flux_z9.txt","w+");
+	fprintf(fp,"/*this is recorded by FLUENT UDF*/\n");
+	
+	
+	/*get the face normal area and record*/
+	thread_loop_c(t,d)
+	{
+		begin_c_loop(c,t)
+		{
+		  C_CENTROID(xc,c,t);  /*get the center coordinates of one cell*/
+		  if (xc[2]<=9 && xc[2]>=8.5) /*first, shrink search range*/
+		  {
+			   c_face_loop(c,t,n) /*loop over all the faces of one cell*/
+			   {
+			      f=C_FACE(c,t,n);
+				  tf=C_FACE_THREAD(c,t,n);
+				  F_CENTROID(xf,f,tf); /*get the coordinate of a face*/
+				  
+				 if ((fabs(xf[2]-9)<1e-3) && (xc[2]<=9)) /*indicates it is  boundary*/
+				  {
+				   /*here puts integeral*/
+				   F_AREA(A,f,tf);
+				   cell_num++;
+				   /* fprintf(fp,"x=%g,y=%g,z=%g\n",xc[0],xc[1],xc[2]);
+				   	fprintf(fp,"x=%g,y=%g,z=%g\n",xf[0],xf[1],xf[2]);*/
+				  }
+		       }
+		   }
+	    }end_c_loop(c,t)
+	}
+	fprintf(fp,"face normal area is %g, %g, %g, \t",A[0]/NV_MAG(A),A[1]/NV_MAG(A),A[2]/NV_MAG(A));
+	fprintf(fp,"cell_num is %d\t",cell_num);
+	if (ND_DOT(A[0]/NV_MAG(A),A[1]/NV_MAG(A),A[2]/NV_MAG(A),0,0,1)>0)
+	{
+			fprintf(fp,"face area normal points out the tunnel\n");
+	}	
+	else
+	{
+			fprintf(fp,"face area normal points in the tunnel\n");
+	}
+	fprintf(fp,"vf_out mf_out vf_in mf_in mass_flow_in_rate neutral_height q_in q_out cell_num\n");
+	fclose(fp);
+}
+
+DEFINE_EXECUTE_AT_END(flux_z9)
+{
+	Domain *d;
+   	Thread *t,*tf;
+    cell_t c;
+	face_t f;
+	real xc[ND_ND];
+	real xf[ND_ND];
+	real A[ND_ND];  /*store face normal vector*/
+
+	real d_vf=0, d_mf=0;
+	real vf_in=0, mf_in=0;
+	real vf_out=0, mf_out=0;
+	real q_in=0, q_out=0;
+	real cell_num=0;
+	
+	int n=-1; /*loop variable*/
+	real neutral_height=0,A_orintation=0,epsilon=100;
+	
+	FILE *fp; /*pointer to a file */
+	fp = fopen("flux_z9.txt","a+");
+	d = Get_Domain(1);	
+		
+	thread_loop_c(t,d)
+	{
+		begin_c_loop(c,t)
+		{
+		  C_CENTROID(xc,c,t);  /*get the center coordinates of one cell*/
+		  if (xc[2]<=9 && xc[2]>=8.5) /*first, shrink search range*/
+		  {
+			   c_face_loop(c,t,n) /*loop over all the faces of one cell*/
+			   {
+			      f=C_FACE(c,t,n);
+				  tf=C_FACE_THREAD(c,t,n);
+				  F_CENTROID(xf,f,tf); /*get the coordinate of a face*/
+				  
+				  if ((fabs(xf[2]-9)<1e-3) && (xc[2]<=9)) /*indicates it is  boundary*/
+				  {
+				   /*here puts integeral*/
+				   F_AREA(A,f,tf);
+				   /*  A_orintation=ND_DOT(A[0]/NV_MAG(A),A[1]/NV_MAG(A),A[2]/NV_MAG(A),0,0,1);/*to judge the orientation of A*/
+				   d_vf=ND_DOT(A[0],A[1],A[2],C_U(c,t),C_V(c,t),C_W(c,t));/*dot product to calculate the volume flux*/
+				    if (ND_DOT(C_U(c,t),C_V(c,t),C_W(c,t),0,0,1)<0)/*indicates area normal and vlocity orients the opposite, inflow*/
+				     {
+					   vf_in=vf_in+fabs(d_vf);
+					   mf_in=mf_in+fabs(d_vf)*C_R(c,t);
+					  /* fprintf(fp,"in %-5g\n",C_W(c,t) );  write the coordinate*/
+					  q_in=q_in+C_CP(c,t)*C_R(c,t)*(C_T(c,t)-300)*fabs(d_vf);/*sum the heat flux*/					  
+					  if ((fabs(xf[0]-0.3)<2e-1) && (epsilon <= fabs(C_P(c,t))))/*x= 0.1m-0.5m*/
+					        {  
+							   epsilon = fabs(C_P(c,t));
+							   neutral_height=xf[1];
+							}
+					 }
+					else 
+						{ /*outflow*/
+					    vf_out=vf_out+fabs(d_vf);
+						mf_out=mf_out+fabs(d_vf)*C_R(c,t);
+						/*fprintf(fp,"out %-5g\n",C_W(c,t) );  write the coordinate*/
+						q_out=q_out+C_CP(c,t)*C_R(c,t)*(C_T(c,t)-300)*fabs(d_vf);/*sum the heat flux*/
+						}
+						cell_num++;
+				  }
+		       }
+		   }
+	    }
+		end_c_loop(c,t)  
+	}
+	fprintf(fp,"%-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g %-5g\n",vf_out,mf_out,vf_in,mf_in,mf_in-mf_out,neutral_height,q_in,q_out,cell_num);  /*write the coordinate*/
+	fclose(fp);
+}
